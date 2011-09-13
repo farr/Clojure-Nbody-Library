@@ -9,7 +9,7 @@
         a (double-array 3 0.0)
         j (double-array 3 0.0)]
     (acc-and-jerk m1 r1 (double-array 3 0.0) m2 r2 (double-array 3 0.0) a j)
-    (is (vector-close? a [-0.0955794 0.160949 -0.124955] {:epsrel 1e-3}))))
+    (is (vector-close? a [-0.147896 0.249047 -0.193351] {:epsrel 1e-3}))))
 
 (deftest jerk-test
   (let [m1 0.64626
@@ -21,4 +21,4 @@
         a (double-array 3 0.0)
         j (double-array 3 0.0)]
     (acc-and-jerk m1 r1 v1 m2 r2 v2 a j)
-    (is (vector-close? j [-0.172055 -0.0526258 -0.171505] {:epsrel 1e-3}))))
+    (is (vector-close? j [-0.266232 -0.0814312 -0.26538] {:epsrel 1e-3}))))
