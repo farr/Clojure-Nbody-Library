@@ -13,4 +13,15 @@
            y (double y)]
        (let [dx (Math/abs (- x y))
              ave (* 0.5 (+ (Math/abs x) (Math/abs y)))]
-         (<= dx (+ epsabs (* ave epsrel)))))))
+         (<= dx (+ eabs (* ave erel)))))))
+
+(defn vector-close?
+  "True only if each of the components of x and y are close?."
+  ([x y]
+     (vector-close? x y {:epsabs 1e-8 :epsrel 1e-8}))
+  ([x y {:keys [epsabs epsrel] :as e}]
+     (loop [x (seq x) y (seq y)]
+       (or (not (seq x))
+           (not (seq y))
+           (and (close? (first x) (first y) e)
+                (recur (rest x) (rest y)))))))

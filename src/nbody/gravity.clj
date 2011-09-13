@@ -29,9 +29,9 @@
                     r3#))
            (aset j# i#
                   (* (* m1# m2#)
-                      (- (/ (- (aget v2# i#) (aget v1# i#))
-                             r3#)
-                         (* (double 3.0)
-                             (* rdv#
-                                (/ (- (aget r2# i#) (aget r1# i#))
-                                   r5#)))))))))))
+                     (- (/ (- (aget v2# i#) (aget v1# i#))
+                           r3#)
+                        (* (double 3.0)
+                           (* rdv#
+                              (/ (- (aget r2# i#) (aget r1# i#))
+                                 r5#)))))))))))
