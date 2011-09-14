@@ -34,3 +34,17 @@
                            (* rdv#
                               (/ (- (aget r2# i#) (aget r1# i#))
                                  r5#)))))))))))
+
+(definline acc!
+  "Fills a with the acceleration on body 1 due to body 2."
+  [r1 m2 r2 a]
+  `(let [r1# (doubles ~r1)
+         m2# (double ~m2)
+         r2# (doubles ~r2)
+         a# (doubles ~a)]
+     (let [r# (double (distance r1# r2#))
+           r22# (* r# r#)
+           r3# (* r22# r#)]
+       (dotimes [i# 3]
+         (aset a# i# (/ (* m2# (- (aget r2# i#) (aget r1# i#)))
+                        r3#))))))
