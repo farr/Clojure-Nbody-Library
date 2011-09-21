@@ -66,13 +66,3 @@
         (let [r (Math/abs (double (/ (- e1 e) (- e2 e))))]
           (is (and (< r (Math/sqrt (* 32.0 64.0)))
                    (> r (Math/sqrt (* 16.0 32.0))))))))))
-
-(deftest finish-test
-  (let [bs (setup (hot-spherical (Random.) 100) 1e-3)
-        e (energy bs)]
-    (let [e1 (energy (finish bs 1e-5 1e-3))
-          e2 (energy (finish bs 5e-4 1e-3))]
-     (let [err1 (Math/abs (double (/ (- e1 e) e)))
-           err2 (Math/abs (double (/ (- e2 e) e)))]
-       (let [r (/ err1 err2)]
-         true)))))

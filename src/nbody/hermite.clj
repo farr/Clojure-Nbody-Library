@@ -169,42 +169,11 @@
      ps)))
 
 (defn compare-by-tnext
-  "Comparison function that first compares particles by their next
-  time, followed by the standard comparison."
+  "Compares particles first by their :tnext value, and then by the standard comparison ordering."
   [^Particle p1 ^Particle p2]
-  (let [c (compare (.tnext p1) (.tnext p2))]
-    (if (= c 0)
-      (compare p1 p2)
-      c)))
-
-(defn particles-can-advance
-  "Returns a sequence of particles that can be immediately advanced
-  past tnext, but cannot be advanced past tup."
-  [ps tnext tup]
-  (take-while
-   (fn [^Particle p]
-     (and (<= tnext (.tnext p))
-          (< (.tnext p) tup)))
-   ps))
-
-(defn finish
-  "Returns a set of particles that have all been advanced to tstop,
-  assuming that all particles have tnext past tstop."
-  [ps tstop sf]
-  (pmap
-   #(advanced-particle (assoc % :tnext tstop) ps sf)
-   ps))
-
-(defn internal-advance
-   [ps tstart tnext tup sf]
-   (if-let [old-ps (seq (particles-can-advance ps tnext tup))]
-     (let [new-ps (pmap #(advanced-particle (assoc % :tnext tnext) ps sf) old-ps)]
-       (reduce
-        (fn [ps new-p old-p]
-          (conj (disj ps old-p) new-p))
-        ps
-        new-ps
-        old-ps))
-     (let [t-half (+ tstart (/ (- tnext tstart) 2.0))
-           new-ps (internal-advance ps tstart t-half tnext sf)]
-       (recur new-ps t-half tnext tup sf))))
+  (let [t1 (double (.tnext p1))
+        t2 (double (.tnext p2))]
+    (let [c (int (compare t1 t2))]
+      (if (= c 0)
+        (compare p1 p2)
+        c))))

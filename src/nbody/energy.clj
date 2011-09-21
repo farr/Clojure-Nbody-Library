@@ -31,10 +31,18 @@
      0.0
      bs)))
 
+(defn elements-and-rests
+  "Returns a sequence of [element rest]."
+  [s]
+  (lazy-seq
+   (when (seq s)
+     (cons [(first s) (rest s)]
+           (elements-and-rests (rest s))))))
+
 (defn potential-energy
   "Returns the potential energy of a system of bodies."
   [bs]
-  (* 0.5 (reduce + (pmap (fn [b] (body-potential b bs)) bs))))
+  (reduce + (pmap #(apply body-potential %) (elements-and-rests bs))))
 
 (defn energy
   "Returns the total energy of the bs system."
