@@ -35,8 +35,7 @@
           e1 (energy new-bs1)
           e2 (energy new-bs2)]
       (let [r (Math/abs (double (/ (- e e1) (- e e2))))]
-        (is (and (> r (Math/sqrt (* 16.0 32.0)))
-                 (< r (Math/sqrt (* 32.0 64.0)))))))))
+        (is (> r (Math/sqrt (* 16.0 32.0))))))))
 
 (deftest long-circular-binary-test
   (let [bs (setup
@@ -52,22 +51,19 @@
              e1 (energy new-bs1)
              e2 (energy new-bs2)]
          (let [r (Math/abs (double (/ (- e e1) (- e e2))))]
-           (is (and (> r (Math/sqrt (* 8.0 16.0)))
-                    (< r (Math/sqrt (* 16.0 32.0)))))
+           (is (> r (Math/sqrt (* 8.0 16.0))))
            (is (< (Math/abs (double (- 1.0 (distance (:r (first new-bs1))
                                                      (:r (first (rest new-bs1)))))))
                   1e-3))))))))
 
 (deftest advanced-body-test
   (let [ps (setup (hot-spherical (Random.) 10) 1e-3)]
-    (let [new-ps1 (map #(advanced-particle (assoc % :tnext 0.000001) ps 1e-3) ps)
-          new-ps2 (map #(advanced-particle (assoc % :tnext 0.0000005) ps 1e-3) ps)]
+    (let [new-ps1 (map #(advanced-particle (assoc % :tnext 0.01) ps 1e-3) ps)
+          new-ps2 (map #(advanced-particle (assoc % :tnext 0.005) ps 1e-3) ps)]
       (let [e (energy ps)
             e1 (energy new-ps1)
             e2 (energy new-ps2)]
         (let [r (Math/abs (double (/ (- e1 e) (- e2 e))))]
-          (println (- e2 e))
-          (println r)
           (is (and (< r (Math/sqrt (* 32.0 64.0)))
                    (> r (Math/sqrt (* 16.0 32.0))))))))))
 
