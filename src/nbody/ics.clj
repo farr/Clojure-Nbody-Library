@@ -83,7 +83,7 @@
   (let [n (int n)
         m (/ (double 1.0) n)
         vmax (Math/sqrt (/ 5.0 6.0))
-        rmax (double (/ 12.0 5.0))]
+        rmax (double (/ 6.0 5.0))]
     (letfn [(next-body [id]
               (let [rmag (choose-r rng rmax)
                     vmag (choose-r rng vmax)]

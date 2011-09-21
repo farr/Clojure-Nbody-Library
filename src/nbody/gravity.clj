@@ -22,7 +22,7 @@
              r22# (* r# r#)
              r3# (* r# r22#)
              r5# (* r3# r22#)]
-         (dotimes [i# (int 3)]
+         (dotimes [i# 3]
            (aset a# i#
                  (/ (* m2# (- (aget r2# i#) (aget r1# i#)))
                     r3#))

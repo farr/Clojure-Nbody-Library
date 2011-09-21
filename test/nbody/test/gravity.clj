@@ -23,5 +23,5 @@
         v2 (double-array [0.0913329 0.122995 0.0394023])
         a (double-array 3 0.0)
         j (double-array 3 0.0)]
-    (acc-and-jerk! m1 r1 v1 m2 r2 v2 a j)
+    (acc-and-jerk! r1 v1 m2 r2 v2 a j)
     (is (vector-close? j [-0.266232 -0.0814312 -0.26538] {:epsrel 1e-3}))))

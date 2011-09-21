@@ -34,7 +34,7 @@
 (defn potential-energy
   "Returns the potential energy of a system of bodies."
   [bs]
-  (reduce + (pmap (fn [b] (body-potential b bs)) bs)))
+  (* 0.5 (reduce + (pmap (fn [b] (body-potential b bs)) bs))))
 
 (defn energy
   "Returns the total energy of the bs system."
