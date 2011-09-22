@@ -161,11 +161,13 @@
   (let [ps (map map->particle ps)]
     (map
      (fn [p]
-       (let [[a j] (total-acc-and-jerk p ps)
-             t (:t p)
-             h (* sf (acc-jerk-timescale a j))
-             tnext (+ t h)]
-         (assoc p :a a :j j :tnext tnext)))
+       (if (= (:t p) (:tnext p))
+         (let [[a j] (total-acc-and-jerk p ps)
+               t (:t p)
+               h (* sf (acc-jerk-timescale a j))
+               tnext (+ t h)]
+           (assoc p :a a :j j :tnext tnext))
+         p))
      ps)))
 
 (defn compare-by-tnext
@@ -177,3 +179,37 @@
       (if (= c 0)
         (compare p1 p2)
         c))))
+
+(defn particle-can-advance
+  "True iff :tnext is smaller than the given time."
+  [^Particle p t]
+  (let [tn (double (.tnext p))
+        t (double t)]
+    (> tn t)))
+
+(defn find-advance-limit
+  "Returns the smallest index (counting down from i) of the particle
+  that can advance to tstop."
+  [ps tstop i]
+  (cond
+   (<= i 0) i
+   (particle-can-advance (get ps (- i 1)) tstop) (recur ps tstop (- i 1))
+   :else i))
+
+(defn advance-range
+  "Advances the ps up to index i (exclusive) to time tstop."
+  [ps tstart tstop sf i]
+  (let [iadvance (find-advance-limit ps tstop i)]
+    (if (<= iadvance 0)
+      (let [new-ps (pmap #(advanced-particle (assoc % :tnext tstop) ps sf) (subvec ps 0 i))
+            sorted-ps (sort compare-by-tnext new-ps)]
+        (vec (concat new-ps (subvec ps i))))
+      (let [tmid (+ tstart (* 0.5 (- tstop tstart)))]
+        (let [new-ps (advance-range ps tstart tmid sf i)]
+          (recur new-ps tmid tstop sf i))))))
+
+(defn advance
+  "Advances the ps up to tstop using sf as the timestep safety factor."
+  [ps tstop sf]
+  (let [ps (vec (sort compare-by-tnext (setup ps sf)))]
+    (advance-range ps (:t (first ps)) tstop sf (count ps))))

@@ -66,3 +66,12 @@
         (let [r (Math/abs (double (/ (- e1 e) (- e2 e))))]
           (is (and (< r (Math/sqrt (* 32.0 64.0)))
                    (> r (Math/sqrt (* 16.0 32.0))))))))))
+
+(deftest advance-scaling-test
+  (let [ps (hot-spherical (Random.) 100)]
+    (let [ps1 (advance ps 1.0 1e-4)
+          ps2 (advance ps 1.0 5e-5)]
+      (let [e (energy ps)
+            e1 (energy ps1)
+            e2 (energy ps2)]
+        (println e e1 e2)))))
