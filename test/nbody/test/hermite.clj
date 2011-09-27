@@ -68,10 +68,21 @@
                    (> r (Math/sqrt (* 16.0 32.0))))))))))
 
 (deftest advance-scaling-test
+    (let [ps (hot-spherical (Random.) 100)]
+      (let [ps1 (advance ps 1.0 1e-1)
+            ps2 (advance ps 1.0 5e-2)]
+        (let [e (energy ps)
+              e1 (energy ps1)
+              e2 (energy ps2)]
+          (let [r (Math/abs (double (/ (- e e1) (- e e2))))]
+            (is (> r (Math/sqrt (* 8.0 16.0)))))))))
+
+(deftest shared-timestep-advance-test
   (let [ps (hot-spherical (Random.) 100)]
-    (let [ps1 (advance ps 1.0 1e-4)
-          ps2 (advance ps 1.0 5e-5)]
+    (let [ps1 (shared-timestep-advance ps 1.0 1e-1)
+          ps2 (shared-timestep-advance ps 1.0 5e-2)]
       (let [e (energy ps)
             e1 (energy ps1)
             e2 (energy ps2)]
-        (println e e1 e2)))))
+        (let [r (Math/abs (double (/ (- e e1) (- e e2))))]
+          (is (> r (Math/sqrt (* 8.0 16.0)))))))))

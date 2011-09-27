@@ -98,26 +98,13 @@
   [a j]
   (/ (norm a) (norm j)))
 
-(defn acc-jerk-predicted-timescale
-  "Returns a timescale based on the "
-  [a j ap jp h]
-  (let [a (doubles a)
-        j (doubles j)
-        ap (doubles ap)
-        jp (doubles jp)
-        h (double h)
-        ; The following is v_corr - v_pred, and is O(h^3), despite appearances.
-        dv (double (norm (amap a i dv
-                               (- (* (double 0.5)
-                                     (* h (- (aget ap i) (aget a i))))
-                                  (* (/ (double 1.0) (double 12.0))
-                                     (* (* h h)
-                                        (+ (* (double 5.0) (aget j i))
-                                           (aget jp i))))))))]
-    (if (= dv 0.0)
-      (* h 2.1) ; Increase h enough to move up in block-power-of-two sizes.
-      (Math/sqrt (/ (* (double (norm a)) h)
-                    dv)))))
+(defn prediction-failure-timescale
+  "Returns the timescale that would be estimated from the failure of
+  the predicted velocity to match the corrected velocity."
+  [vp vnew a h]
+  (let [dv (double (distance vp vnew))
+        delta-v (double (norm (v* h a)))]
+    (* h (Math/sqrt (/ delta-v dv)))))
 
 (defn advanced-particle
   "Returns a particle that is b advanced to (.tnext b) in the system
@@ -150,13 +137,12 @@
                                   (* h
                                      (* (/ (double 1.0) (double 12.0))
                                         (- (aget a i) (aget ap i))))))))
-              hnew (* sf (acc-jerk-predicted-timescale a j ap jp h))]
+              hnew (* sf (prediction-failure-timescale vp vnew a h))]
           (assoc bp :t tp :r rnew :v vnew :a ap :j jp :tnext (+ tp hnew)))))))
 
 (defn setup
   "Sets up a particle array for integration.  sf is the timestep
-  safety factor.  Ensures that no particle's timestep takes it
-  beyond tstop."
+  safety factor."
   [ps sf]
   (let [ps (map map->particle ps)]
     (map
@@ -180,36 +166,51 @@
         (compare p1 p2)
         c))))
 
-(defn particle-can-advance
+(defn particle-can-advance?
   "True iff :tnext is smaller than the given time."
   [^Particle p t]
   (let [tn (double (.tnext p))
         t (double t)]
     (> tn t)))
 
-(defn find-advance-limit
-  "Returns the smallest index (counting down from i) of the particle
-  that can advance to tstop."
-  [ps tstop i]
-  (cond
-   (<= i 0) i
-   (particle-can-advance (get ps (- i 1)) tstop) (recur ps tstop (- i 1))
-   :else i))
+(defn minimum-tnext
+  [ps]
+  (reduce (fn [mt ^Particle p]
+            (let [mt (double mt)
+                  pt (double (.tnext p))]
+              (min mt pt)))
+          Double/POSITIVE_INFINITY
+          ps))
 
-(defn advance-range
-  "Advances the ps up to index i (exclusive) to time tstop."
-  [ps tstart tstop sf i]
-  (let [iadvance (find-advance-limit ps tstop i)]
-    (if (<= iadvance 0)
-      (let [new-ps (pmap #(advanced-particle (assoc % :tnext tstop) ps sf) (subvec ps 0 i))
-            sorted-ps (sort compare-by-tnext new-ps)]
-        (vec (concat new-ps (subvec ps i))))
-      (let [tmid (+ tstart (* 0.5 (- tstop tstart)))]
-        (let [new-ps (advance-range ps tstart tmid sf i)]
-          (recur new-ps tmid tstop sf i))))))
+(defn shared-timestep-advance
+  "Advance all bodies by the same timestep to the given time."
+  [ps tstop sf]
+  (let [ps (setup ps sf)]
+    (loop [ps ps]
+      (let [tn (minimum-tnext ps)]
+        (if (>= tn tstop)
+          (pmap #(advanced-particle (assoc % :tnext tstop) ps sf) ps)
+          (recur (pmap #(advanced-particle (assoc % :tnext tn) ps sf) ps)))))))
+
+(defn internal-advance
+  "Advances ps beginning at tstart to tstop."
+  [ps tstart tstop tup sf]
+  (if-let [these-ps (seq (take-while (fn [p] (and (particle-can-advance? p tstop)
+                                                  (not (particle-can-advance? p tup))))
+                                     ps))]
+    (let [new-ps (pmap #(advanced-particle (assoc % :tnext tstop) ps sf) these-ps)]
+      (reduce (fn [ps [old-p new-p]]
+                (conj (disj ps old-p) new-p))
+              ps (map (fn [x y] [x y]) these-ps new-ps)))
+    (let [thalf (+ tstart (/ (- tstop tstart) 2.0))
+          half-ps (internal-advance ps tstart thalf tstop sf)]
+      (recur half-ps thalf tstop tup sf))))
 
 (defn advance
-  "Advances the ps up to tstop using sf as the timestep safety factor."
+  "Advances bs using individual timesteps to tstop, using sf as the
+  timestep safety factor."
   [ps tstop sf]
-  (let [ps (vec (sort compare-by-tnext (setup ps sf)))]
-    (advance-range ps (:t (first ps)) tstop sf (count ps))))
+  (let [ps (setup ps sf)
+        tstart (:t (first ps))
+        ps (apply sorted-set-by compare-by-tnext ps)]
+    (internal-advance ps tstart tstop Double/POSITIVE_INFINITY sf)))
