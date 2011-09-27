@@ -1,13 +1,9 @@
 # nbody
 
-FIXME: write description
-
-## Usage
-
-FIXME: write
+A library for N-body computations in Clojure.
 
 ## License
 
-Copyright (C) 2011 FIXME
+Copyright (C) 2011 Will M. Farr <w-farr@northwestern.edu>
 
 Distributed under the Eclipse Public License, the same as Clojure.
