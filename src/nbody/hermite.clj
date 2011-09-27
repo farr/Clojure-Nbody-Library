@@ -1,9 +1,49 @@
 (ns nbody.hermite
   (:use nbody.vec nbody.gravity))
 
+(definline compare-double-array
+  [a1 a2]
+  `(let [a1# (doubles ~a1)
+         a2# (doubles ~a2)]
+     (let [n1# (int (alength a1#))
+           n2# (int (alength a2#))]
+       (let [c# (int (compare n1# n2#))]
+         (if (= c# 0)
+           (loop [i# (int 0)]
+             (cond
+              (>= i# n1#) 0
+              (= (aget a1# i#) (aget a2# i#)) (recur (+ i# 1))
+              (< (aget a1# i#) (aget a2# i#)) -1
+              :else 1))
+           c#)))))
+
 (defrecord Particle [id ^double m ^double t ^double tnext
                      ^doubles r ^doubles v
-                     ^doubles a ^doubles j])
+                     ^doubles a ^doubles j]
+  java.lang.Comparable
+  (compareTo [this other]
+    (let [^Particle this this
+          ^Particle other other]
+      (let [c (int (compare (.tnext this) (.tnext other)))]
+        (if (= c (int 0))
+          (let [c (int (compare (.m this) (.m other)))]
+            (if (= c (int 0))
+              (let [c (int (compare (.t this) (.t other)))]
+                (if (= c (int 0))
+                  (let [c (int (compare-double-array (.r this) (.r other)))]
+                    (if (= c (int 0))
+                      (let [c (int (compare-double-array (.v this) (.v other)))]
+                        (if (= c (int 0))
+                          (let [c (int (compare-double-array (.a this) (.a other)))]
+                            (if (= c (int 0))
+                              (let [c (int (compare-double-array (.j this) (.j other)))]
+                                c)
+                              c))
+                          c))
+                      c))
+                  c))
+              c))
+          c)))))
 
 (defn map->particle
   "Takes a map with components :id, :m, :t, :r, :v, and converts it to
@@ -95,16 +135,19 @@
 
 (defn acc-jerk-timescale
   "Returns a timescale based on the given acc and jerk."
-  [a j]
-  (/ (norm a) (norm j)))
+  [a j sf]
+  (* (* 2.0 (Math/sqrt (double sf))) (/ (norm a) (norm j))))
 
 (defn prediction-failure-timescale
   "Returns the timescale that would be estimated from the failure of
   the predicted velocity to match the corrected velocity."
-  [vp vnew a h]
+  [vp vnew a h sf]
   (let [dv (double (distance vp vnew))
-        delta-v (double (norm (v* h a)))]
-    (* h (Math/sqrt (/ delta-v dv)))))
+        delta-v (double (* h (norm a)))
+        sf (double sf)]
+    (if (= dv 0.0)
+      (* h 2.01) ; Double stepsize if predictor is too accurate. 
+      (* h (Math/sqrt (* sf (/ delta-v dv)))))))
 
 (defn advanced-particle
   "Returns a particle that is b advanced to (.tnext b) in the system
@@ -137,7 +180,7 @@
                                   (* h
                                      (* (/ (double 1.0) (double 12.0))
                                         (- (aget a i) (aget ap i))))))))
-              hnew (* sf (prediction-failure-timescale vp vnew a h))]
+              hnew (prediction-failure-timescale vp vnew a h sf)]
           (assoc bp :t tp :r rnew :v vnew :a ap :j jp :tnext (+ tp hnew)))))))
 
 (defn setup
@@ -150,21 +193,11 @@
        (if (= (:t p) (:tnext p))
          (let [[a j] (total-acc-and-jerk p ps)
                t (:t p)
-               h (* sf (acc-jerk-timescale a j))
+               h (acc-jerk-timescale a j sf)
                tnext (+ t h)]
            (assoc p :a a :j j :tnext tnext))
          p))
      ps)))
-
-(defn compare-by-tnext
-  "Compares particles first by their :tnext value, and then by the standard comparison ordering."
-  [^Particle p1 ^Particle p2]
-  (let [t1 (double (.tnext p1))
-        t2 (double (.tnext p2))]
-    (let [c (int (compare t1 t2))]
-      (if (= c 0)
-        (compare p1 p2)
-        c))))
 
 (defn particle-can-advance?
   "True iff :tnext is smaller than the given time."
@@ -212,5 +245,5 @@
   [ps tstop sf]
   (let [ps (setup ps sf)
         tstart (:t (first ps))
-        ps (apply sorted-set-by compare-by-tnext ps)]
+        ps (apply sorted-set ps)]
     (internal-advance ps tstart tstop Double/POSITIVE_INFINITY sf)))

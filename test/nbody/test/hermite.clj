@@ -29,8 +29,8 @@
             (list {:id 1 :m 1 :t 0 :r (double-array [0.5 0.0 0.0]) :v (double-array [0.0 0.0 (Math/sqrt 0.5)])}
                   {:id 2 :m 1 :t 0 :r (double-array [-0.5 0.0 0.0]) :v (double-array [0.0 0.0 (- (Math/sqrt 0.5))])})
             1e-3)
-        new-bs1 (map #(advanced-particle (assoc % :tnext 0.3) bs 1e-3) bs)
-        new-bs2 (map #(advanced-particle (assoc % :tnext 0.15) bs 1e-3) bs)]
+        new-bs1 (map #(advanced-particle (assoc % :tnext 0.3) bs 1e-4) bs)
+        new-bs2 (map #(advanced-particle (assoc % :tnext 0.15) bs 1e-4) bs)]
     (let [e (energy bs)
           e1 (energy new-bs1)
           e2 (energy new-bs2)]
@@ -44,7 +44,7 @@
             1e-3)]
     (letfn [(advancer [dt]
               (fn [bs]
-                (map #(advanced-particle (assoc % :tnext (+ (:t %) dt)) bs 1e-3) bs)))]
+                (map #(advanced-particle (assoc % :tnext (+ (:t %) dt)) bs 1e-4) bs)))]
       (let [new-bs1 (nth (iterate (advancer 0.1) bs) 100)
             new-bs2 (nth (iterate (advancer 0.05) bs) 200)]
        (let [e (energy bs)
@@ -58,8 +58,8 @@
 
 (deftest advanced-body-test
   (let [ps (setup (hot-spherical (Random.) 10) 1e-3)]
-    (let [new-ps1 (map #(advanced-particle (assoc % :tnext 0.01) ps 1e-3) ps)
-          new-ps2 (map #(advanced-particle (assoc % :tnext 0.005) ps 1e-3) ps)]
+    (let [new-ps1 (map #(advanced-particle (assoc % :tnext 0.01) ps 1e-4) ps)
+          new-ps2 (map #(advanced-particle (assoc % :tnext 0.005) ps 1e-4) ps)]
       (let [e (energy ps)
             e1 (energy new-ps1)
             e2 (energy new-ps2)]
@@ -69,8 +69,8 @@
 
 (deftest advance-scaling-test
     (let [ps (hot-spherical (Random.) 100)]
-      (let [ps1 (advance ps 1.0 1e-1)
-            ps2 (advance ps 1.0 5e-2)]
+      (let [ps1 (advance ps 1.0 1e-3)
+            ps2 (advance ps 1.0 2.5e-4)]
         (let [e (energy ps)
               e1 (energy ps1)
               e2 (energy ps2)]
@@ -79,8 +79,8 @@
 
 (deftest shared-timestep-advance-test
   (let [ps (hot-spherical (Random.) 100)]
-    (let [ps1 (shared-timestep-advance ps 1.0 1e-1)
-          ps2 (shared-timestep-advance ps 1.0 5e-2)]
+    (let [ps1 (shared-timestep-advance ps 1.0 1e-3)
+          ps2 (shared-timestep-advance ps 1.0 2.5e-4)]
       (let [e (energy ps)
             e1 (energy ps1)
             e2 (energy ps2)]
